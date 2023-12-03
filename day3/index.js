@@ -1,4 +1,5 @@
 const fs = require("fs");
+const { product, sum } = require("../utils/math")
 
 function isNumber(char) {
   return char !== "." && !isNaN(parseInt(char));
@@ -105,45 +106,36 @@ function parseData(data) {
     digit.groupIndex = groupIndex;
   }
 
-  const maxGroupIndex = groupIndex;
+  const nbGroups = groupIndex + 1;
 
   const symbolsReach = buildSymbolsReach(symbols);
 
   const digitsOnReach = getDigitsOnReach(digits, symbolsReach);
 
-  function getGroups() {
-    let groupIndexesNotOnReach = [];
+  function getNumbersOnReach() {
     let groupIndexesOnReach = [];
-    for (let groupIndex = 0; groupIndex <= maxGroupIndex; groupIndex++) {
+
+    for (let groupIndex = 0; groupIndex < nbGroups; groupIndex++) {
       const hasOneDigitOnReach = digitsOnReach.some(
         (digit) => digit.groupIndex === groupIndex,
       );
-      if (!hasOneDigitOnReach) {
-        groupIndexesNotOnReach.push(groupIndex);
-      } else {
+      if (hasOneDigitOnReach) {
         groupIndexesOnReach.push(groupIndex);
       }
     }
 
-    const numbersNotOnReach = buildGroupsNumbers(
-      digits,
-      groupIndexesNotOnReach,
-    );
     const numbersOnReach = buildGroupsNumbers(digits, groupIndexesOnReach);
 
-    return {
-      numbersNotOnReach,
-      numbersOnReach,
-    };
+    return numbersOnReach
   }
 
-  const { numbersNotOnReach, numbersOnReach } = getGroups();
+  const numbersOnReach = getNumbersOnReach();
 
   //
   //
   //
 
-  const gears = getGears(symbols, digits, maxGroupIndex);
+  const gears = getGears(symbols, digits, nbGroups);
 
   //
   //
@@ -154,21 +146,14 @@ function parseData(data) {
     symbols,
     symbolsReach,
     digits,
-    numbersNotOnReach,
     numbersOnReach,
-    resultPart1: numbersOnReach.reduce(
-      (acc, currentValue) => acc + currentValue,
-      0,
-    ),
     gears,
-    gearRatio: gears.reduce(
-      (acc, currentValue) => acc + currentValue.gearRatio,
-      0,
-    ),
-  };
+    resultPart1: sum(numbersOnReach),
+    gearRatio: sum(gears.map(gear => gear.gearRatio))  
+	};
 }
 
-function getGears(symbols, digits, maxGroupIndex) {
+function getGears(symbols, digits, nbGroups) {
   return symbols
     .filter((symbol) => symbol.char === "*")
     .map((gear) => {
@@ -176,7 +161,7 @@ function getGears(symbols, digits, maxGroupIndex) {
       const digitsOnReach = getDigitsOnReach(digits, symbolsReach);
 
       let groupIndexesOnReach = [];
-      for (let groupIndex = 0; groupIndex <= maxGroupIndex; groupIndex++) {
+      for (let groupIndex = 0; groupIndex < nbGroups; groupIndex++) {
         const hasOneDigitOnReach = digitsOnReach.some(
           (digit) => digit.groupIndex === groupIndex,
         );
@@ -191,7 +176,7 @@ function getGears(symbols, digits, maxGroupIndex) {
           gear,
           groupIndexesOnReach,
           numbersOnReach,
-          gearRatio: numbersOnReach[0] * numbersOnReach[1],
+          gearRatio: product(numbersOnReach),
         };
       }
     })
