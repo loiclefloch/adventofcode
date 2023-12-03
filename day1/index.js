@@ -76,8 +76,6 @@ function getTotal(data) {
 
 function main() {
   const data = fs.readFileSync("./input", "utf8").split("\n")
-  console.log(data)
-
   const total = getTotal(data);
   console.log(total)
 }
