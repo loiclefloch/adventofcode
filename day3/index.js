@@ -61,6 +61,7 @@ function parseData(data) {
 		line.map((char, x) => {
 			if (isSymbol(char)) {
 				return {
+					char,
 					x,
 					y,
 				};
@@ -98,37 +99,89 @@ function parseData(data) {
 
 	const symbolsReach = buildSymbolsReach(symbols)
 
-	const digitsOnReach = digits.filter(({ x, y }) => {
-		const onSymbolsReach = symbolsReach.find(symbolReach => symbolReach.x === x && symbolReach.y === y)
-		return !!onSymbolsReach
-	})
+	const digitsOnReach = getDigitsOnReach(digits, symbolsReach)
 
 
-	let groupIndexesNotOnReach = [];
-	let groupIndexesOnReach = [];
-	for (let groupIndex = 0; groupIndex <= maxGroupIndex; groupIndex++) {
-		const hasOneDigitOnReach = digitsOnReach.some(digit => digit.groupIndex === groupIndex)
-		if (!hasOneDigitOnReach) {
-			groupIndexesNotOnReach.push(groupIndex)
-		} else {
-			groupIndexesOnReach.push(groupIndex)
+	function getGroups() {
+		let groupIndexesNotOnReach = [];
+		let groupIndexesOnReach = [];
+		for (let groupIndex = 0; groupIndex <= maxGroupIndex; groupIndex++) {
+			const hasOneDigitOnReach = digitsOnReach.some(digit => digit.groupIndex === groupIndex)
+			if (!hasOneDigitOnReach) {
+				groupIndexesNotOnReach.push(groupIndex)
+			} else {
+				groupIndexesOnReach.push(groupIndex)
+			}
+		}
+		
+		const numbersNotOnReach = buildGroupsNumbers(digits, groupIndexesNotOnReach);
+		const numbersOnReach = buildGroupsNumbers(digits, groupIndexesOnReach);
+
+		return {
+			numbersNotOnReach,
+			numbersOnReach
 		}
 	}
-	
 
-	const numbersNotOnReach = buildGroupsNumbers(digits, groupIndexesNotOnReach);
-	const numbersOnReach = buildGroupsNumbers(digits, groupIndexesOnReach);
+	const {
+		numbersNotOnReach,
+		numbersOnReach
+	} = getGroups()
+
+	//
+	//
+	//
+
+	const gears = getGears(symbols, digits, maxGroupIndex)
+
+	//
+	//
+	//
 
 	return {
     table,
     symbols,
 		symbolsReach,
 		digits,
-		groupIndexesNotOnReach,
 		numbersNotOnReach,
 		numbersOnReach,
-		total: numbersOnReach.reduce((acc, currentValue) => acc + currentValue, 0)
+		resultPart1: numbersOnReach.reduce((acc, currentValue) => acc + currentValue, 0),
+		gears,
+		gearRatio: gears.reduce((acc, currentValue) => acc + currentValue.gearRatio, 0)
   };
+}
+
+function getGears(symbols, digits, maxGroupIndex) {
+	return symbols.filter(symbol => symbol.char === "*")
+		.map(gear => {
+			const symbolsReach = buildSymbolsReach([gear])
+			const digitsOnReach = getDigitsOnReach(digits, symbolsReach)
+
+			let groupIndexesOnReach = []
+			for (let groupIndex = 0; groupIndex <= maxGroupIndex; groupIndex++) {
+				const hasOneDigitOnReach = digitsOnReach.some(digit => digit.groupIndex === groupIndex)
+				if (hasOneDigitOnReach) {
+					groupIndexesOnReach.push(groupIndex)
+				}
+			}
+			if (groupIndexesOnReach.length === 2) {
+				const numbersOnReach = buildGroupsNumbers(digits, groupIndexesOnReach)
+
+				return {
+					gear,
+					groupIndexesOnReach,
+					numbersOnReach,
+					gearRatio: numbersOnReach[0] * numbersOnReach[1],
+				}
+			}
+		}).filter(Boolean)
+}
+
+function getDigitsOnReach(digits, symbolsReach) {
+	return digits.filter(({ x, y }) => {
+		const onSymbolsReach = symbolsReach.find(symbolReach => symbolReach.x === x && symbolReach.y === y)
+		return !!onSymbolsReach
+	})
 }
 
 function buildGroupsNumbers(digits, groupIndexes) {
